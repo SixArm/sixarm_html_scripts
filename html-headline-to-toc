@@ -1,29 +1,94 @@
 #!/usr/bin/env ruby
+#
+# Create a table of contents for an HTML page.
+#
+# Syntax:
+#
+#     $ cat index.html | html-headline-to-toc
+#     => print a table of contents HTML list
+#
+# This script scans each HTML line, looking for a headline tag
+# that also has an anchor name link. This script then outputs
+# all the anchor name links, in a formatted HTML list, suitable
+# for using as a table of contents for the HTML page.
+#
+# Example of line that matches:
+#
+#     <h2><a name="foo">Foo Goo Hoo</a></h2>
+#
+# Example of output:
+#
+#     <li><a href="#foo">Foo Goo Hoo</a></li>
+#
+# This script uses h2, h3, h4, and skips h1, h5, h6,
+# because we prefer to use h1 for the page top headline
+# and not for a table of contents entry, and because we
+# prefer to use h5 and h6 for fine print such as footers.
+#
+##
 
-def indent(n)
-  return "  " * (n-1)
+## Configuration - adjust as you like
+
+def html_open; "<html>";  end
+def html_shut; "</html>"; end
+def body_open; "<body>";  end
+def body_shut; "</body>"; end
+def h1_open;   "<h1>";    end
+def h1_shut;   "</h1>";   end
+def ul_open;   "<ul>";    end
+def ul_shut;   "</ul>";   end
+def li_open;   "<li>";    end
+def li_shut;   "<li>";    end
+def nav_open;  "<nav>";   end
+def nav_shut;  "</nav>";  end
+
+## Configuration of the indentation; we like two spaces.
+
+def indent_atom; "  ";    end
+
+## Helpers
+
+def indent(i)
+  return @indent_atom * (i-1)
 end
 
-def ante_list(n)
-  puts indent(n) + "<ul>\n"
-  return n+1
+def indent_open(i, text="")
+  puts indent(i) + text
+  return i+1
 end
 
-def post_list(n)
-  puts indent(n-1) + "</ul>\n"
+def indent_same(i, text="")
+  puts indent(i) + text
+end
+
+def indent_shut(i, text="")
+  puts indent(i-1) + text
   return n-1
 end
 
-indentation=1
-
-ARGF.each_line do |e|
-  e.gsub!(/^<h([2-4]).*<a name="(.*?)">(.*?)<\/a><\/h\1/){
+def do_line(line)
+  line.match(/^<h([2-4]).*<a name="(.*?)">(.*?)<\/a><\/h\1/){
     hn = Regexp.last_match(1).to_i
-    while (hn > indentation) do; indentation = ante_list(indentation); end
-    while (hn < indentation) do; indentation = post_list(indentation); end
+    while (hn > indentation) do; indentation = indent_open(indentation, ul_open); end
+    while (hn < indentation) do; indentation = indent_shut(indentation, ul_shut); end
     name = Regexp.last_match(2).strip
     headline = Regexp.last_match(3).strip
-    puts indent(indentation) + "<li><a href=\"#{name}\">#{headline}</a></li>\n"
+    li = li_open + "<a href=\"#{name}\">#{headline}</a>" + li_shut
+    indent_same(indentation, li)
   }
 end
-while (indentation > 1) do; indentation = post_list(indentation); end
+
+def main
+  indentation=1
+  puts html_open
+  puts body_open
+  puts h1_open + "Table Of Contents" + h1_shut
+  puts nav_open
+  ARGF.each_line{|line| do_line(line) }
+  while (indentation > 1) do; indentation = indent_shut(indentation, ul_shut); end
+  puts nav_shut
+  puts body_shut
+  puts html_shut
+end
+
+main
