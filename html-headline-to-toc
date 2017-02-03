@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+def indent(n)
+  return "  " * (n-1)
+end
+
+def ante_list(n)
+  puts indent(n) + "<ul>\n"
+  return n+1
+end
+
+def post_list(n)
+  puts indent(n-1) + "</ul>\n"
+  return n-1
+end
+
+indentation=1
+
+ARGF.each_line do |e|
+  e.gsub!(/^<h([2-4]).*<a name="(.*?)">(.*?)<\/a><\/h\1/){
+    hn = Regexp.last_match(1).to_i
+    while (hn > indentation) do; indentation = ante_list(indentation); end
+    while (hn < indentation) do; indentation = post_list(indentation); end
+    name = Regexp.last_match(2).strip
+    headline = Regexp.last_match(3).strip
+    puts indent(indentation) + "<li><a href=\"#{name}\">#{headline}</a></li>\n"
+  }
+end
+while (indentation > 1) do; indentation = post_list(indentation); end
