@@ -38,7 +38,7 @@ def h1_shut;   "</h1>";   end
 def ul_open;   "<ul>";    end
 def ul_shut;   "</ul>";   end
 def li_open;   "<li>";    end
-def li_shut;   "<li>";    end
+def li_shut;   "</li>";   end
 def nav_open;  "<nav>";   end
 def nav_shut;  "</nav>";  end
 
@@ -49,7 +49,7 @@ def indent_atom; "  ";    end
 ## Helpers
 
 def indent(i)
-  return @indent_atom * (i-1)
+  return indent_atom * (i-1)
 end
 
 def indent_open(i, text="")
@@ -63,19 +63,20 @@ end
 
 def indent_shut(i, text="")
   puts indent(i-1) + text
-  return n-1
+  return i-1
 end
 
-def do_line(line)
+def do_line(i, line)
   line.match(/^<h([2-4]).*<a name="(.*?)">(.*?)<\/a><\/h\1/){
     hn = Regexp.last_match(1).to_i
-    while (hn > indentation) do; indentation = indent_open(indentation, ul_open); end
-    while (hn < indentation) do; indentation = indent_shut(indentation, ul_shut); end
+    while (hn > i) do; i = indent_open(i, ul_open); end
+    while (hn < i) do; i = indent_shut(i, ul_shut); end
     name = Regexp.last_match(2).strip
     headline = Regexp.last_match(3).strip
     li = li_open + "<a href=\"#{name}\">#{headline}</a>" + li_shut
-    indent_same(indentation, li)
+    indent_same(i, li)
   }
+  return i
 end
 
 def main
@@ -84,7 +85,7 @@ def main
   puts body_open
   puts h1_open + "Table Of Contents" + h1_shut
   puts nav_open
-  ARGF.each_line{|line| do_line(line) }
+  ARGF.each_line{|line| indentation = do_line(indentation, line) }
   while (indentation > 1) do; indentation = indent_shut(indentation, ul_shut); end
   puts nav_shut
   puts body_shut
